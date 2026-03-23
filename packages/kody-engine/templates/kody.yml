@@ -1,0 +1,312 @@
+# Kody Pipeline — powered by @aguyinvest/kody-engine
+# This workflow is managed by the kody-engine package. To update, run:
+#   npx @aguyinvest/kody-engine init --force
+#
+# Required secrets:
+#   - MINIMAX_API_KEY (or other LLM provider keys)
+#   - GH_PAT (optional, for cross-repo operations)
+#
+# Optional secrets:
+#   - GEMINI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY
+
+name: kody
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_id:
+        description: 'Task ID to run'
+        required: true
+        type: string
+      mode:
+        description: 'Pipeline mode: spec, impl, rerun, full, status'
+        required: false
+        type: string
+        default: 'full'
+      clarify:
+        description: 'Run clarify stage (opt-in Q&A loop, default: skip)'
+        required: false
+        type: boolean
+        default: false
+      dry_run:
+        description: 'Dry run mode (no actual execution)'
+        required: false
+        type: boolean
+        default: false
+      feedback:
+        description: 'Feedback for rerun mode'
+        required: false
+        type: string
+        default: ''
+      from_stage:
+        description: 'Stage to restart from (for rerun)'
+        required: false
+        type: string
+        default: ''
+      issue_number:
+        description: 'Issue number for the task'
+        required: false
+        type: string
+        default: ''
+      complexity:
+        description: 'Override complexity score (1-100) for testing'
+        required: false
+        type: string
+        default: ''
+
+  issue_comment:
+    types: [created]
+
+  pull_request_review:
+    types: [submitted]
+
+concurrency:
+  group: kody-${{ github.event.inputs.task_id || github.event.issue.number || github.event.pull_request.number || github.sha }}
+  cancel-in-progress: false
+
+permissions:
+  issues: write
+  pull-requests: write
+  contents: write
+
+jobs:
+  # Job 1: Parse trigger, validate inputs, gate execution
+  parse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' &&
+       (contains(github.event.comment.body, '@kody') ||
+        contains(github.event.comment.body, '/kody'))) ||
+      (github.event_name == 'pull_request_review' &&
+       github.event.review.state == 'changes_requested')
+    env:
+      GH_TOKEN: ${{ github.token }}
+    outputs:
+      task_id: ${{ steps.parse.outputs.task_id }}
+      mode: ${{ steps.parse.outputs.mode }}
+      clarify: ${{ steps.parse.outputs.clarify }}
+      dry_run: ${{ steps.parse.outputs.dry_run }}
+      from_stage: ${{ steps.parse.outputs.from_stage }}
+      feedback: ${{ steps.parse.outputs.feedback }}
+      issue_number: ${{ steps.parse.outputs.issue_number }}
+      is_pull_request: ${{ steps.parse.outputs.is_pull_request }}
+      valid: ${{ steps.parse.outputs.valid }}
+      trigger_type: ${{ steps.parse.outputs.trigger_type }}
+      comment_body: ${{ steps.parse.outputs.comment_body }}
+      version: ${{ steps.parse.outputs.version }}
+      complexity: ${{ steps.parse.outputs.complexity }}
+      fresh: ${{ steps.parse.outputs.fresh }}
+    steps:
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install kody-engine
+        run: pnpm add -g @aguyinvest/kody-engine
+
+      # For comments: validate safety filters before parsing
+      - name: Validate comment trigger safety
+        if: github.event_name == 'issue_comment'
+        id: safety
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          AUTHOR: ${{ github.event.comment.user.login }}
+          ASSOCIATION: ${{ github.event.comment.author_association }}
+        run: kody-engine parse-safety
+
+      # Add reaction to acknowledge command
+      - name: Acknowledge command with reaction
+        if: github.event_name == 'issue_comment' && steps.safety.outputs.valid == 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions \
+            -X POST -f content=eyes || true
+
+      # Parse command inputs
+      - name: Parse command inputs
+        id: parse
+        env:
+          SAFETY_VALID: ${{ steps.safety.outputs.valid }}
+          SAFETY_REASON: ${{ steps.safety.outputs.reason }}
+          DISPATCH_TASK_ID: ${{ github.event.inputs.task_id }}
+          DISPATCH_MODE: ${{ github.event.inputs.mode }}
+          DISPATCH_DRY_RUN: ${{ github.event.inputs.dry_run }}
+          DISPATCH_FEEDBACK: ${{ github.event.inputs.feedback }}
+          DISPATCH_FROM_STAGE: ${{ github.event.inputs.from_stage }}
+          DISPATCH_CLARIFY: ${{ github.event.inputs.clarify }}
+          DISPATCH_COMPLEXITY: ${{ github.event.inputs.complexity }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          IS_PULL_REQUEST: ${{ github.event.issue.pull_request != null || github.event_name == 'pull_request_review' }}
+          PR_REVIEW_STATE: ${{ github.event.review.state || '' }}
+          PR_REVIEW_BODY: ${{ github.event.review.body || '' }}
+          PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: kody-engine parse-inputs
+
+  # Job 1b: Notify on parse errors
+  notify-parse-error:
+    needs: parse
+    if: >-
+      needs.parse.outputs.valid == 'false' &&
+      needs.parse.outputs.issue_number != '' &&
+      github.event_name == 'issue_comment'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Post error comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment ${{ needs.parse.outputs.issue_number }} \
+            --body "⚠️ Invalid \`@kody\` command. Use: \`@kody [spec|impl|rerun|full|status] [task-id] [options]\`"
+
+  # Job 1c: Notify on orchestrate failures
+  notify-orchestrate-error:
+    needs: [parse, orchestrate]
+    if: >-
+      always() &&
+      needs.orchestrate.result == 'failure' &&
+      needs.parse.result == 'success' &&
+      needs.parse.outputs.issue_number != '' &&
+      github.event_name == 'issue_comment'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Post failure comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment ${{ needs.parse.outputs.issue_number }} \
+            --repo ${{ github.repository }} \
+            --body "⚠️ **Pipeline failed to start**
+
+          The workflow crashed before the pipeline could run (infrastructure error, not a code issue).
+
+          To retry, comment \`/kody\` on this issue.
+
+          [View CI logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+  # Job 2: Orchestrate — run the pipeline
+  orchestrate:
+    needs: parse
+    if: needs.parse.outputs.valid == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install kody-engine
+        run: pnpm add -g @aguyinvest/kody-engine
+
+      - name: Checkout feature branch if exists
+        if: needs.parse.outputs.task_id != '' || needs.parse.outputs.fresh == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TASK_ID: ${{ needs.parse.outputs.task_id }}
+          ISSUE_NUMBER: ${{ needs.parse.outputs.issue_number }}
+          FRESH: ${{ needs.parse.outputs.fresh }}
+        run: kody-engine checkout-branch
+
+      - name: Configure git identity
+        run: |
+          git config --global user.email "${GIT_USER_EMAIL:-41898282+github-actions[bot]@users.noreply.github.com}"
+          git config --global user.name "${GIT_USER_NAME:-github-actions[bot]}"
+
+      - name: Install OpenCode CLI
+        run: |
+          curl -fsSL https://opencode.ai/install | bash
+          echo "$HOME/.opencode/bin" >> $GITHUB_PATH
+          $HOME/.opencode/bin/opencode --version || echo "Warning: opencode install failed"
+
+      - name: Set LLM keys
+        run: |
+          echo "MINIMAX_API_KEY=${{ secrets.MINIMAX_API_KEY }}" >> $GITHUB_ENV
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> $GITHUB_ENV
+          echo "GOOGLE_GENERATIVE_AI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> $GITHUB_ENV
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> $GITHUB_ENV
+          echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> $GITHUB_ENV
+          echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> $GITHUB_ENV
+
+      - name: Run Kody
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'mongodb://localhost:27017/test' }}
+          TASK_ID: ${{ needs.parse.outputs.task_id }}
+          MODE: ${{ needs.parse.outputs.mode }}
+          CLARIFY: ${{ needs.parse.outputs.clarify }}
+          DRY_RUN: ${{ needs.parse.outputs.dry_run }}
+          FEEDBACK: ${{ needs.parse.outputs.feedback }}
+          FROM_STAGE: ${{ needs.parse.outputs.from_stage }}
+          ISSUE_NUMBER: ${{ needs.parse.outputs.issue_number }}
+          FRESH: ${{ needs.parse.outputs.fresh }}
+          TRIGGER_TYPE: ${{ needs.parse.outputs.trigger_type }}
+          COMMENT_BODY: ${{ needs.parse.outputs.comment_body }}
+          VERSION: ${{ needs.parse.outputs.version }}
+          COMPLEXITY: ${{ needs.parse.outputs.complexity }}
+          IS_PULL_REQUEST: ${{ needs.parse.outputs.is_pull_request }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GITHUB_ACTOR: ${{ github.event.comment.user.login || github.actor }}
+          ISSUE_CREATOR: ${{ github.event.issue.user.login || '' }}
+        run: kody-engine run
+
+      # Pipeline summary
+      - name: Pipeline summary
+        if: always() && needs.parse.outputs.task_id != ''
+        run: |
+          TASK_ID="${{ needs.parse.outputs.task_id }}"
+          STATUS_FILE=".tasks/${TASK_ID}/status.json"
+          echo "## 🤖 Kody Pipeline: \`${TASK_ID}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f "$STATUS_FILE" ]; then
+            STATE=$(jq -r '.state // "unknown"' "$STATUS_FILE")
+            echo "**Status**: ${STATE}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Stage | State | Duration |" >> $GITHUB_STEP_SUMMARY
+            echo "|-------|-------|----------|" >> $GITHUB_STEP_SUMMARY
+            jq -r '.stages | to_entries[] | "| \(.key) | \(.value.state) | \(.value.elapsed // "-")ms |"' "$STATUS_FILE" >> $GITHUB_STEP_SUMMARY || true
+          else
+            echo "No status file found." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload artifacts
+        if: always() && needs.parse.outputs.task_id != ''
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: kody-${{ needs.parse.outputs.task_id }}-${{ github.run_id }}
+          path: .tasks/${{ needs.parse.outputs.task_id }}/
+          retention-days: 7

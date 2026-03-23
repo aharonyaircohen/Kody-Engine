@@ -1,0 +1,29 @@
+{
+  "$schema": "./kody.config.schema.json",
+  "quality": {
+    "typecheck": "pnpm -s tsc --noEmit",
+    "lint": "pnpm -s lint",
+    "lintFix": "pnpm lint:fix",
+    "format": "pnpm -s format:check",
+    "formatFix": "pnpm format:fix",
+    "testUnit": "pnpm -s test:unit"
+  },
+  "git": {
+    "defaultBranch": "dev"
+  },
+  "github": {
+    "owner": "your-org",
+    "repo": "your-repo",
+    "appId": 12345
+  },
+  "agents": {
+    "instructions": [],
+    "domainMap": {
+      "payload-expert": ["src/server/payload/**"],
+      "web-expert": ["src/app/(frontend)/**"]
+    }
+  },
+  "paths": {
+    "taskDir": ".tasks"
+  }
+}
