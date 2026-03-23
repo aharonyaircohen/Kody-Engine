@@ -4,24 +4,19 @@ AI agent pipeline that converts GitHub issues into implemented PRs.
 
 ## System Overview
 
-Kody is a 3-layer system:
+Kody is a 2-layer system:
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │  1. CI LAYER — GitHub Actions (.github/workflows/kody.yml)       │
 │     Trigger: @kody comment or workflow_dispatch                  │
 │     Jobs: parse → orchestrate                                    │
-│     Output: parsed inputs → pnpm kody                            │
+│     Output: parsed inputs → kody-engine run                      │
 ├──────────────────────────────────────────────────────────────────┤
-│  2. ENGINE LAYER — State machine (scripts/kody/)                 │
+│  2. ENGINE LAYER — State machine (src/engine/)                   │
 │     Entry: entry.ts → state-machine.ts loop                      │
 │     Stages: taskify → gap → architect → build → pr              │
 │     Output: code changes, PRs, status.json                       │
-├──────────────────────────────────────────────────────────────────┤
-│  3. DASHBOARD LAYER — Next.js UI (src/ui/kody/, src/app/api/kody)│
-│     Pages: /kody (list), /kody/:issueNumber (detail)             │
-│     API: /api/kody/* proxies GitHub API                          │
-│     Output: real-time pipeline status, gate approval UI          │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -417,36 +412,6 @@ concurrency:
 ```
 
 One pipeline run per issue at a time. Does NOT cancel in-progress runs.
-
-## Dashboard Layer
-
-### Pages
-
-| Route                | Component     | Purpose              |
-| -------------------- | ------------- | -------------------- |
-| `/kody`              | KodyDashboard | Task list, filters   |
-| `/kody/:issueNumber` | TaskDetail    | Pipeline detail view |
-
-### API Routes (`/api/kody/*`)
-
-| Route                             | Method | Purpose                           |
-| --------------------------------- | ------ | --------------------------------- |
-| `/api/kody/tasks`                 | GET    | List tasks (proxies GH issues)    |
-| `/api/kody/tasks/:taskId`         | GET    | Task detail                       |
-| `/api/kody/tasks/approve`         | POST   | Approve gate                      |
-| `/api/kody/tasks/approve-review`  | POST   | Approve review findings           |
-| `/api/kody/tasks/:taskId/actions` | POST   | Trigger actions (rerun, abort)    |
-| `/api/kody/tasks/:taskId/docs`    | GET    | Task documents (spec, plan, etc.) |
-| `/api/kody/pipeline/:taskId`      | GET    | Pipeline status                   |
-| `/api/kody/prs`                   | GET    | List PRs                          |
-| `/api/kody/prs/files`             | GET    | PR file changes                   |
-| `/api/kody/prs/status`            | GET    | PR CI status                      |
-| `/api/kody/workflows`             | GET    | GitHub Actions workflow runs      |
-| `/api/kody/boards`                | GET    | Project board data                |
-| `/api/kody/collaborators`         | GET    | Repo collaborators                |
-| `/api/kody/auth`                  | GET    | Auth check                        |
-| `/api/kody/publish`               | POST   | Publish/merge PR                  |
-| `/api/kody/chat/*`                | \*     | Chat save/load/stream             |
 
 ## Architecture Analysis & Design Rationale
 

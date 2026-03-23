@@ -5,7 +5,6 @@ import * as path from 'path'
 const EXTERNAL_DEPS = [
   '@ai-sdk/google',
   '@ai-sdk/mcp',
-  '@ai-sdk/react',
   '@anthropic-ai/sdk',
   '@modelcontextprotocol/sdk',
   '@octokit/core',

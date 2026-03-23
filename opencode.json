@@ -74,7 +74,7 @@
     "browser": {
       "model": "minimax-coding-plan/MiniMax-M2.7-highspeed",
       "description": "Browser agent - navigates A-Guy platform, inspects pages, answers UI questions. Uses Chrome DevTools MCP locally, Playwright MCP in CI.",
-      "instructions": ["scripts/browser-agent/AGENT.md"]
+      "instructions": [".opencode/docs/BROWSER_AUTOMATION.md"]
     },
     "review": {
       "model": "anthropic/claude-opus-4-6",

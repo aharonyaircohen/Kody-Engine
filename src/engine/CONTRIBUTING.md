@@ -9,7 +9,7 @@ The Kody pipeline is a deterministic task execution engine that processes GitHub
 ## Project Structure
 
 ```
-scripts/kody/
+src/engine/
 ├── engine/               # Core pipeline engine
 │   ├── state-machine.ts  # Deterministic execution engine
 │   ├── status.ts        # State persistence (status.json)
@@ -49,7 +49,7 @@ scripts/kody/
    pnpm test:unit --watch
 
    # Specific test file
-   pnpm test:unit --run tests/unit/scripts/kody/engine/state-machine.test.ts
+   pnpm test:unit --run tests/unit/src/engine/engine/state-machine.test.ts
    ```
 
 3. **Type checking**:
@@ -131,7 +131,7 @@ logStageFail('build', ctx.taskId, errorMessage)
 4. **Add skip conditions** in `pipeline/skip-conditions.ts` if needed
 
 5. **Add tests**:
-   - Unit tests in `tests/unit/scripts/kody/`
+   - Unit tests in `tests/unit/src/engine/`
    - Integration tests in `tests/int/`
 
 ## Adding a New Post-Action
@@ -170,14 +170,14 @@ pnpm kody run --taskId=<task-id> --dry-run
 
 ### Tests Failing
 
-1. Check import paths - tests in `tests/unit/scripts/kody/` need `../../../../` to reach project root
+1. Check import paths - tests in `tests/unit/src/engine/` need `../../../../` to reach project root
 2. Mock external dependencies (LLM calls, GitHub API, etc.)
 3. Use `vi.useFakeTimers()` for time-sensitive tests
 
 ### Type Errors
 
-1. Run `pnpm generate:types` after changing Payload schemas
-2. Check that `StageName` types are consistent across files
+1. Check that `StageName` types are consistent across files
+2. Run `pnpm typecheck` to verify
 
 ### Debugging Pipeline Runs
 
