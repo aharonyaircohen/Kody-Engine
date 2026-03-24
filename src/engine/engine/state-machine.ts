@@ -54,11 +54,18 @@ import { PipelineObserver } from "../pipeline/observer/observer";
 class StageError extends Error {
   public readonly stageName: string;
   public readonly cause?: Error;
-  constructor(message: string, stageName: string, cause?: Error) {
+  public readonly sessionId?: string;
+  constructor(
+    message: string,
+    stageName: string,
+    cause?: Error,
+    sessionId?: string,
+  ) {
     super(message);
     this.name = "StageError";
     this.stageName = stageName;
     this.cause = cause;
+    this.sessionId = sessionId;
   }
 }
 
@@ -419,8 +426,14 @@ async function executeSingleStep(
       }
 
       // Throw to route through Observer catch block below
+      // Include sessionId so Observer can reuse the same session on retry (not fork from previous stage's session)
       const errorMessage = `${stageName} ${result.outcome === "timed_out" ? "timed out" : "failed"}: ${result.reason || "unknown"}`;
-      throw new Error(errorMessage);
+      throw new StageError(
+        errorMessage,
+        stageName,
+        undefined,
+        result.sessionId,
+      );
     }
 
     return await handleStageResult(
@@ -444,8 +457,13 @@ async function executeSingleStep(
     logger.error({ err: error }, `  ❌ ${stageName} failed:`);
     logStageFail(stageName, ctx.taskId, errorMessage);
 
+    // Extract sessionId from StageError if available (carries the failed stage's session, not previous stage's)
+    const stageSessionId =
+      error instanceof StageError ? error.sessionId : undefined;
+    const effectiveSessionId = stageSessionId || ctx.lastSessionId;
+
     // Check if Observer is available (requires serverUrl and sessionId)
-    const canObserve = ctx.serverUrl && ctx.lastSessionId && !ctx.input.dryRun;
+    const canObserve = ctx.serverUrl && effectiveSessionId && !ctx.input.dryRun;
 
     if (canObserve && !def.advisory) {
       // Delegate to Observer for complex failure handling
@@ -455,7 +473,7 @@ async function executeSingleStep(
           ctx.taskId,
           ctx.taskDir,
           ctx.serverUrl!,
-          ctx.lastSessionId!,
+          effectiveSessionId!,
           ctx.taskDir, // dataDir is taskDir/opencode-data derived in Observer
         );
 
