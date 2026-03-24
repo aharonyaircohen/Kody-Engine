@@ -1,6 +1,6 @@
 {
   "name": "@kody-ade/kody-engine",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Kody CI/CD pipeline engine — multi-agent pipeline for GitHub repos",
   "license": "MIT",
   "type": "module",
