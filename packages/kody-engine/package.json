@@ -1,6 +1,6 @@
 {
   "name": "@kody-ade/kody-engine",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Kody CI/CD pipeline engine — multi-agent pipeline for GitHub repos",
   "license": "MIT",
   "type": "module",
@@ -13,7 +13,7 @@
     "opencode"
   ],
   "scripts": {
-    "copy:opencode": "rm -rf opencode && mkdir -p opencode && cp -r ../../.opencode/agents ../../.opencode/docs opencode/",
+    "copy:opencode": "rm -rf opencode && mkdir -p opencode && cp -r ../../.opencode/agents ../../.opencode/docs ../../opencode.json opencode/",
     "build": "tsup",
     "prepublishOnly": "pnpm build && pnpm copy:opencode"
   },
