@@ -5,10 +5,10 @@
  * @ai-summary Pluggable runner backend for Kody: supports both local (ocode) and CI (opencode github run) modes
  */
 
-import { spawn, type ChildProcess } from 'child_process'
+import { spawn, type ChildProcess } from "child_process";
 
-import { getEnv } from './env'
-import { resolveOpenCodeBinary } from './opencode-server'
+import { getEnv } from "./env";
+import { resolveOpenCodeBinary } from "./opencode-server";
 
 // ============================================================================
 // Types
@@ -17,22 +17,22 @@ import { resolveOpenCodeBinary } from './opencode-server'
 /** Options passed to runner.spawn() for server mode */
 export interface RunnerSpawnOptions {
   /** URL of running OpenCode server to attach to */
-  serverUrl?: string
+  serverUrl?: string;
   /** Session ID to fork from (requires serverUrl) */
-  sessionId?: string
+  sessionId?: string;
   /** XDG_DATA_HOME directory — must match the server's data dir for instance lookup */
-  dataDir?: string
+  dataDir?: string;
 }
 
 export interface RunnerBackend {
-  name: string
+  name: string;
   spawn(
     stage: string,
     prompt: string,
     env: NodeJS.ProcessEnv,
     cwd: string,
     options?: RunnerSpawnOptions,
-  ): ChildProcess
+  ): ChildProcess;
 }
 
 // ============================================================================
@@ -40,7 +40,7 @@ export interface RunnerBackend {
 // ============================================================================
 
 export class GitHubRunner implements RunnerBackend {
-  name = 'opencode-github'
+  name = "opencode-github";
 
   spawn(
     stage: string,
@@ -56,45 +56,54 @@ export class GitHubRunner implements RunnerBackend {
     // XDG_DATA_HOME must match the server's data dir for instance lookup.
     if (options?.serverUrl) {
       const args = [
-        'run',
-        '--agent',
+        "run",
+        "--agent",
         stage,
-        '--format',
-        'json',
-        '--attach',
+        "--format",
+        "json",
+        "--attach",
         options.serverUrl,
-        '--dir',
+        "--dir",
         cwd,
-      ]
-      if (options.sessionId) args.push('--session', options.sessionId, '--fork')
-      args.push(prompt)
+      ];
+      if (options.sessionId)
+        args.push("--session", options.sessionId, "--fork");
+      args.push(prompt);
       return spawn(resolveOpenCodeBinary(), args, {
         cwd,
-        stdio: ['ignore', 'pipe', 'pipe'],
+        stdio: ["ignore", "pipe", "pipe"],
         env: {
           ...env,
           ...(options.dataDir ? { XDG_DATA_HOME: options.dataDir } : {}),
         },
-      })
+      });
     }
 
     // Without server: use pnpm exec for backward compatibility
-    const args = ['exec', 'opencode', 'run', '--agent', stage, '--format', 'json']
-    args.push(prompt)
-    return spawn('pnpm', args, {
+    const args = [
+      "exec",
+      "opencode",
+      "run",
+      "--agent",
+      stage,
+      "--format",
+      "json",
+    ];
+    args.push(prompt);
+    return spawn("pnpm", args, {
       cwd,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: ["ignore", "pipe", "pipe"],
       env,
-    })
+    });
   }
 }
 
 // ============================================================================
-// Local Runner (uses pnpm ocode run)
+// Local Runner (uses pnpm opencode run)
 // ============================================================================
 
 export class LocalRunner implements RunnerBackend {
-  name = 'opencode-local'
+  name = "opencode-local";
 
   spawn(
     stage: string,
@@ -104,47 +113,49 @@ export class LocalRunner implements RunnerBackend {
     options?: RunnerSpawnOptions,
   ): ChildProcess {
     // When attaching to a running server, use the real opencode binary directly.
-    // `pnpm ocode` resolves to `pnpm exec opencode` which uses the old opencode-ai
-    // npm package. The real binary supports --agent + --attach properly.
+    // `pnpm exec opencode` uses the opencode-ai npm package which may not
+    // support --agent + --attach properly. The real binary (installed via
+    // curl) supports --agent + --attach properly.
     // XDG_DATA_HOME must match the server's data dir for instance lookup.
     if (options?.serverUrl) {
       const args = [
-        'run',
-        '--agent',
+        "run",
+        "--agent",
         stage,
-        '--format',
-        'json',
-        '--attach',
+        "--format",
+        "json",
+        "--attach",
         options.serverUrl,
-        '--dir',
+        "--dir",
         cwd,
-      ]
-      if (options.sessionId) args.push('--session', options.sessionId, '--fork')
-      args.push(prompt)
+      ];
+      if (options.sessionId)
+        args.push("--session", options.sessionId, "--fork");
+      args.push(prompt);
       return spawn(resolveOpenCodeBinary(), args, {
         cwd,
-        stdio: ['ignore', 'pipe', 'pipe'],
+        stdio: ["ignore", "pipe", "pipe"],
         env: {
           ...env,
           ...(options.dataDir ? { XDG_DATA_HOME: options.dataDir } : {}),
           AGENT: stage,
           MODEL: env.MODEL,
         },
-      })
+      });
     }
 
-    // Without server: use pnpm ocode for backward compatibility
-    const args = ['ocode', 'run', '--agent', stage, '--format', 'json']
-    args.push(prompt)
-    return spawn('pnpm', args, {
+    // Without server: use pnpm opencode run for backward compatibility
+    const args = ["opencode", "run", "--agent", stage, "--format", "json"];
+    args.push(prompt);
+    return spawn("pnpm", args, {
       cwd,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: ["ignore", "pipe", "pipe"],
       env: {
         ...env,
         AGENT: stage,
         MODEL: env.MODEL,
       },
-    })
+    });
   }
 }
 
@@ -159,11 +170,11 @@ export class LocalRunner implements RunnerBackend {
  *                If undefined, auto-detects: local when GITHUB_ACTIONS is not set.
  */
 export function createRunner(local?: boolean): RunnerBackend {
-  const env = getEnv()
-  const useLocal = local ?? !env.GITHUB_ACTIONS
+  const env = getEnv();
+  const useLocal = local ?? !env.GITHUB_ACTIONS;
 
   if (useLocal) {
-    return new LocalRunner()
+    return new LocalRunner();
   }
-  return new GitHubRunner()
+  return new GitHubRunner();
 }

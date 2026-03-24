@@ -12,7 +12,7 @@ interface Check {
 export function preflight(): void {
   const checks: Check[] = [
     {
-      name: "ocode CLI (via pnpm)",
+      name: "opencode CLI (via pnpm)",
       test: () =>
         execFileSync("pnpm", ["opencode", "--version"], { stdio: "pipe" }),
       errorMessage: "Run: pnpm install",
