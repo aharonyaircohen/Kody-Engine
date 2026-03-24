@@ -7,64 +7,64 @@ on:
   workflow_dispatch:
     inputs:
       task_id:
-        description: 'Task ID to run'
+        description: "Task ID to run"
         required: true
         type: string
       mode:
-        description: 'Pipeline mode: spec, impl, rerun, full, status'
+        description: "Pipeline mode: spec, impl, rerun, full, status"
         required: false
         type: string
-        default: 'full'
+        default: "full"
       clarify:
-        description: 'Run clarify stage (opt-in Q&A loop, default: skip)'
+        description: "Run clarify stage (opt-in Q&A loop, default: skip)"
         required: false
         type: boolean
         default: false
       dry_run:
-        description: 'Dry run mode (no actual execution)'
+        description: "Dry run mode (no actual execution)"
         required: false
         type: boolean
         default: false
       feedback:
-        description: 'Feedback for rerun mode'
+        description: "Feedback for rerun mode"
         required: false
         type: string
-        default: ''
+        default: ""
       from_stage:
-        description: 'Stage to restart from (for rerun)'
+        description: "Stage to restart from (for rerun)"
         required: false
         type: string
-        default: ''
+        default: ""
       issue_number:
-        description: 'Issue number for the task (passed by inspector for dispatch triggers)'
+        description: "Issue number for the task (passed by inspector for dispatch triggers)"
         required: false
         type: string
-        default: ''
+        default: ""
       runner:
-        description: 'Where to run: github-hosted (default) or self-hosted'
+        description: "Where to run: github-hosted (default) or self-hosted"
         required: false
         type: choice
         options:
           - github-hosted
           - self-hosted
-        default: 'github-hosted'
+        default: "github-hosted"
       version:
-        description: 'Pipeline version (branch, tag, or commit). Overrides KODY_DEFAULT_VERSION'
+        description: "Pipeline version (branch, tag, or commit). Overrides KODY_DEFAULT_VERSION"
         required: false
         type: string
-        default: ''
+        default: ""
       complexity:
-        description: 'Override complexity score (1-100) for testing'
+        description: "Override complexity score (1-100) for testing"
         required: false
         type: string
-        default: ''
+        default: ""
       use_test_config:
-        description: 'Use opencode.test.json (cheap models) instead of opencode.json'
+        description: "Use opencode.test.json (cheap models) instead of opencode.json"
         required: false
         type: boolean
         default: false
       use_mock:
-        description: 'Use mock LLM server with recorded responses'
+        description: "Use mock LLM server with recorded responses"
         required: false
         type: boolean
         default: false
@@ -74,9 +74,9 @@ on:
       - dev
       - main
     paths:
-      - 'src/engine/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
+      - "src/engine/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
 
   issue_comment:
     types: [created]
@@ -142,8 +142,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
@@ -274,8 +274,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -289,17 +289,17 @@ jobs:
       - name: Run parse-inputs validation
         env:
           GH_TOKEN: ${{ github.token }}
-          DISPATCH_TASK_ID: ''
-          DISPATCH_MODE: ''
-          DISPATCH_DRY_RUN: 'false'
-          DISPATCH_FEEDBACK: ''
-          DISPATCH_FROM_STAGE: ''
-          DISPATCH_CLARIFY: 'false'
-          COMMENT_BODY: ''
-          ISSUE_NUMBER: ''
-          GITHUB_EVENT_NAME: 'push'
-          SAFETY_VALID: 'true'
-          SAFETY_REASON: ''
+          DISPATCH_TASK_ID: ""
+          DISPATCH_MODE: ""
+          DISPATCH_DRY_RUN: "false"
+          DISPATCH_FEEDBACK: ""
+          DISPATCH_FROM_STAGE: ""
+          DISPATCH_CLARIFY: "false"
+          COMMENT_BODY: ""
+          ISSUE_NUMBER: ""
+          GITHUB_EVENT_NAME: "push"
+          SAFETY_VALID: "true"
+          SAFETY_REASON: ""
         run: pnpm tsx src/engine/parse-inputs.ts
 
       - name: Validate kody entry can be loaded
@@ -307,6 +307,9 @@ jobs:
 
       - name: Run pipeline canary tests (dry-run, no LLM)
         run: pnpm test:canary
+
+      - name: Run unit tests
+        run: pnpm test:unit
 
       - name: Run pipeline dry-run (full mode - validates plumbing)
         env:
@@ -378,8 +381,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
 
       - name: Configure pnpm to use local store (self-hosted only)
         if: needs.parse.outputs.runner == 'self-hosted'
