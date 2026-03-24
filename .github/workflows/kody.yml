@@ -75,6 +75,7 @@ on:
       - main
     paths:
       - "src/engine/**"
+      - ".github/workflows/**"
       - "package.json"
       - "pnpm-lock.yaml"
 
