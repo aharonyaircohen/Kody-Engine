@@ -10,7 +10,7 @@
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md,yml,yaml}\"",
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,md,yml,yaml}\"",
     "test": "vitest run",
-    "test:unit": "vitest run tests/unit",
+    "test:unit": "vitest run",
     "test:canary": "echo 'canary passed'",
     "kody": "tsx src/engine/entry.ts",
     "kody:spec": "tsx src/engine/entry.ts --mode spec",
