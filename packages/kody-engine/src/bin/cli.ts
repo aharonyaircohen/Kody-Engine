@@ -24,7 +24,7 @@ function getVersion(): string {
 }
 
 // ==========================================================================
-// init command — bootstrap target repo with kody.yml + kody config
+// init command — bootstrap target repo with kody.yml + opencode config
 // ==========================================================================
 
 function initCommand(opts: { force: boolean; workflowOnly: boolean }) {
@@ -51,7 +51,19 @@ function initCommand(opts: { force: boolean; workflowOnly: boolean }) {
     console.log("✓ Copied .github/workflows/kody.yml");
   }
 
-  // 2. Create kody.config.json if it doesn't exist
+  // 2. Copy opencode agents + docs
+  if (opts.workflowOnly) {
+    console.log("\nDone! Configure secrets in your GitHub repo settings.");
+    return;
+  }
+
+  if (fs.existsSync(opencodeDir)) {
+    const destOpencode = path.join(cwd, ".opencode");
+    copyDirRecursive(opencodeDir, destOpencode, opts.force);
+    console.log("✓ Copied .opencode/ (agents + docs)");
+  }
+
+  // 3. Create kody.config.json if it doesn't exist
   const configDest = path.join(cwd, "kody.config.json");
   if (!fs.existsSync(configDest)) {
     const defaultConfig = {
