@@ -1,4 +1,4 @@
-# @aguyinvest/kody-engine
+# @kody-ade/kody-engine
 
 Multi-agent CI/CD pipeline engine that converts GitHub issues into pull requests.
 
@@ -6,17 +6,18 @@ Multi-agent CI/CD pipeline engine that converts GitHub issues into pull requests
 
 ```bash
 # Initialize Kody in your repo
-npx @aguyinvest/kody-engine init
+npx @kody-ade/kody-engine init
 ```
 
 This sets up:
+
 - `.github/workflows/kody.yml` — GitHub Actions workflow
 - `.opencode/` — Agent prompt definitions
 - `kody.config.json` — Pipeline configuration
 
 ## Setup
 
-1. Run `npx @aguyinvest/kody-engine init` in your repo
+1. Run `npx @kody-ade/kody-engine init` in your repo
 2. Edit `kody.config.json` with your repo details
 3. Add LLM API keys as GitHub repo secrets (e.g., `MINIMAX_API_KEY`)
 4. Commit and push the workflow file
@@ -65,10 +66,10 @@ kody-engine checkout-branch
 
 ## Required Secrets
 
-| Secret | Purpose |
-|--------|---------|
+| Secret            | Purpose                                                                   |
+| ----------------- | ------------------------------------------------------------------------- |
 | `MINIMAX_API_KEY` | LLM provider (or `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`) |
-| `GH_PAT` | Optional: cross-repo operations |
+| `GH_PAT`          | Optional: cross-repo operations                                           |
 
 ## License
 

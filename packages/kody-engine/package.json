@@ -1,5 +1,5 @@
 {
-  "name": "@aguyinvest/kody-engine",
+  "name": "@kody-ade/kody-engine",
   "version": "0.1.0",
   "description": "Kody CI/CD pipeline engine — multi-agent pipeline for GitHub repos",
   "license": "MIT",

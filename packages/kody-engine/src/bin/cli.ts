@@ -1,5 +1,5 @@
 /**
- * CLI entry point for @aguyinvest/kody-engine
+ * CLI entry point for @kody-ade/kody-engine
  *
  * Commands:
  *   init     — Copy kody.yml workflow + opencode config to target repo
@@ -7,20 +7,20 @@
  *   version  — Print package version
  */
 
-import { Command } from 'commander'
-import * as fs from 'fs'
-import * as path from 'path'
-import { fileURLToPath } from 'url'
+import { Command } from "commander";
+import * as fs from "fs";
+import * as path from "path";
+import { fileURLToPath } from "url";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Resolve paths relative to the package root (dist/bin/cli.mjs → package root)
-const PKG_ROOT = path.resolve(__dirname, '..', '..')
+const PKG_ROOT = path.resolve(__dirname, "..", "..");
 
 function getVersion(): string {
-  const pkgPath = path.join(PKG_ROOT, 'package.json')
-  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
-  return pkg.version
+  const pkgPath = path.join(PKG_ROOT, "package.json");
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
+  return pkg.version;
 }
 
 // ==========================================================================
@@ -28,64 +28,68 @@ function getVersion(): string {
 // ==========================================================================
 
 function initCommand(opts: { force: boolean; workflowOnly: boolean }) {
-  const cwd = process.cwd()
-  const templatesDir = path.join(PKG_ROOT, 'templates')
-  const opencodeDir = path.join(PKG_ROOT, 'opencode')
+  const cwd = process.cwd();
+  const templatesDir = path.join(PKG_ROOT, "templates");
+  const opencodeDir = path.join(PKG_ROOT, "opencode");
 
   // 1. Copy kody.yml
-  const workflowSrc = path.join(templatesDir, 'kody.yml')
-  const workflowDest = path.join(cwd, '.github', 'workflows', 'kody.yml')
+  const workflowSrc = path.join(templatesDir, "kody.yml");
+  const workflowDest = path.join(cwd, ".github", "workflows", "kody.yml");
 
   if (!fs.existsSync(workflowSrc)) {
-    console.error('Error: Template kody.yml not found in package.')
-    process.exit(1)
+    console.error("Error: Template kody.yml not found in package.");
+    process.exit(1);
   }
 
   if (fs.existsSync(workflowDest) && !opts.force) {
-    console.log('⚠ .github/workflows/kody.yml already exists. Use --force to overwrite.')
+    console.log(
+      "⚠ .github/workflows/kody.yml already exists. Use --force to overwrite.",
+    );
   } else {
-    fs.mkdirSync(path.dirname(workflowDest), { recursive: true })
-    fs.copyFileSync(workflowSrc, workflowDest)
-    console.log('✓ Copied .github/workflows/kody.yml')
+    fs.mkdirSync(path.dirname(workflowDest), { recursive: true });
+    fs.copyFileSync(workflowSrc, workflowDest);
+    console.log("✓ Copied .github/workflows/kody.yml");
   }
 
   if (opts.workflowOnly) {
-    console.log('\nDone! Configure secrets in your GitHub repo settings.')
-    return
+    console.log("\nDone! Configure secrets in your GitHub repo settings.");
+    return;
   }
 
   // 2. Copy opencode agents + docs
   if (fs.existsSync(opencodeDir)) {
-    const destOpencode = path.join(cwd, '.opencode')
-    copyDirRecursive(opencodeDir, destOpencode, opts.force)
-    console.log('✓ Copied .opencode/ (agents + docs)')
+    const destOpencode = path.join(cwd, ".opencode");
+    copyDirRecursive(opencodeDir, destOpencode, opts.force);
+    console.log("✓ Copied .opencode/ (agents + docs)");
   }
 
   // 3. Create kody.config.json if it doesn't exist
-  const configDest = path.join(cwd, 'kody.config.json')
+  const configDest = path.join(cwd, "kody.config.json");
   if (!fs.existsSync(configDest)) {
     const defaultConfig = {
       quality: {
-        typecheck: 'pnpm -s tsc --noEmit',
-        lint: 'pnpm -s lint',
-        lintFix: 'pnpm lint:fix',
-        format: 'pnpm -s format:check',
-        formatFix: 'pnpm format:fix',
-        testUnit: 'pnpm -s test:unit',
+        typecheck: "pnpm -s tsc --noEmit",
+        lint: "pnpm -s lint",
+        lintFix: "pnpm lint:fix",
+        format: "pnpm -s format:check",
+        formatFix: "pnpm format:fix",
+        testUnit: "pnpm -s test:unit",
       },
       git: {
-        defaultBranch: 'dev',
+        defaultBranch: "dev",
       },
       github: {
-        owner: '',
-        repo: '',
+        owner: "",
+        repo: "",
       },
       paths: {
-        taskDir: '.tasks',
+        taskDir: ".tasks",
       },
-    }
-    fs.writeFileSync(configDest, JSON.stringify(defaultConfig, null, 2) + '\n')
-    console.log('✓ Created kody.config.json (edit github.owner and github.repo)')
+    };
+    fs.writeFileSync(configDest, JSON.stringify(defaultConfig, null, 2) + "\n");
+    console.log(
+      "✓ Created kody.config.json (edit github.owner and github.repo)",
+    );
   }
 
   console.log(`
@@ -96,7 +100,7 @@ Done! Next steps:
      - GH_PAT (optional, for cross-repo operations)
   3. Commit and push the workflow file
   4. Comment "@kody full <task-id>" on any issue to run the pipeline
-`)
+`);
 }
 
 // ==========================================================================
@@ -104,8 +108,8 @@ Done! Next steps:
 // ==========================================================================
 
 async function runCommand() {
-  const { main } = await import('@engine/entry')
-  await main(process.argv.slice(3))
+  const { main } = await import("@engine/entry");
+  await main(process.argv.slice(3));
 }
 
 // ==========================================================================
@@ -113,15 +117,15 @@ async function runCommand() {
 // ==========================================================================
 
 async function parseSafetyCommand() {
-  await import('@engine/parse-safety')
+  await import("@engine/parse-safety");
 }
 
 async function parseInputsCommand() {
-  await import('@engine/parse-inputs')
+  await import("@engine/parse-inputs");
 }
 
 async function checkoutBranchCommand() {
-  await import('@engine/checkout-task-branch')
+  await import("@engine/checkout-task-branch");
 }
 
 // ==========================================================================
@@ -129,15 +133,15 @@ async function checkoutBranchCommand() {
 // ==========================================================================
 
 function copyDirRecursive(src: string, dest: string, force: boolean) {
-  fs.mkdirSync(dest, { recursive: true })
+  fs.mkdirSync(dest, { recursive: true });
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
-    const srcPath = path.join(src, entry.name)
-    const destPath = path.join(dest, entry.name)
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
     if (entry.isDirectory()) {
-      copyDirRecursive(srcPath, destPath, force)
+      copyDirRecursive(srcPath, destPath, force);
     } else {
-      if (fs.existsSync(destPath) && !force) continue
-      fs.copyFileSync(srcPath, destPath)
+      if (fs.existsSync(destPath) && !force) continue;
+      fs.copyFileSync(srcPath, destPath);
     }
   }
 }
@@ -147,37 +151,37 @@ function copyDirRecursive(src: string, dest: string, force: boolean) {
 // ==========================================================================
 
 const program = new Command()
-  .name('kody-engine')
+  .name("kody-engine")
   .version(getVersion())
-  .description('Kody CI/CD pipeline engine')
+  .description("Kody CI/CD pipeline engine");
 
 program
-  .command('init')
-  .description('Initialize Kody in the current repo (copies workflow + config)')
-  .option('-f, --force', 'Overwrite existing files', false)
-  .option('-w, --workflow-only', 'Only copy the workflow file', false)
-  .action(initCommand)
+  .command("init")
+  .description("Initialize Kody in the current repo (copies workflow + config)")
+  .option("-f, --force", "Overwrite existing files", false)
+  .option("-w, --workflow-only", "Only copy the workflow file", false)
+  .action(initCommand);
 
 program
-  .command('run', { isDefault: true })
-  .description('Run the Kody pipeline (default command)')
+  .command("run", { isDefault: true })
+  .description("Run the Kody pipeline (default command)")
   .allowUnknownOption()
   .allowExcessArguments()
-  .action(runCommand)
+  .action(runCommand);
 
 program
-  .command('parse-safety')
-  .description('Validate comment trigger safety (CI helper)')
-  .action(parseSafetyCommand)
+  .command("parse-safety")
+  .description("Validate comment trigger safety (CI helper)")
+  .action(parseSafetyCommand);
 
 program
-  .command('parse-inputs')
-  .description('Parse command inputs from trigger (CI helper)')
-  .action(parseInputsCommand)
+  .command("parse-inputs")
+  .description("Parse command inputs from trigger (CI helper)")
+  .action(parseInputsCommand);
 
 program
-  .command('checkout-branch')
-  .description('Checkout or create feature branch for task (CI helper)')
-  .action(checkoutBranchCommand)
+  .command("checkout-branch")
+  .description("Checkout or create feature branch for task (CI helper)")
+  .action(checkoutBranchCommand);
 
-program.parse()
+program.parse();

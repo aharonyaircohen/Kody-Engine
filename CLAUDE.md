@@ -1,6 +1,6 @@
 # Kody Engine — CI/CD Multi-Agent Pipeline
 
-Pipeline engine for automated software development. Runs in GitHub Actions on target repos via the `@aguyinvest/kody-engine` npm package.
+Pipeline engine for automated software development. Runs in GitHub Actions on target repos via the `@kody-ade/kody-engine` npm package.
 
 ## Architecture
 

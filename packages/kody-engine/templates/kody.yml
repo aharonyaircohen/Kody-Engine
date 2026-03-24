@@ -1,6 +1,6 @@
-# Kody Pipeline — powered by @aguyinvest/kody-engine
+# Kody Pipeline — powered by @kody-ade/kody-engine
 # This workflow is managed by the kody-engine package. To update, run:
-#   npx @aguyinvest/kody-engine init --force
+#   npx @kody-ade/kody-engine init --force
 #
 # Required secrets:
 #   - MINIMAX_API_KEY (or other LLM provider keys)
@@ -15,44 +15,44 @@ on:
   workflow_dispatch:
     inputs:
       task_id:
-        description: 'Task ID to run'
+        description: "Task ID to run"
         required: true
         type: string
       mode:
-        description: 'Pipeline mode: spec, impl, rerun, full, status'
+        description: "Pipeline mode: spec, impl, rerun, full, status"
         required: false
         type: string
-        default: 'full'
+        default: "full"
       clarify:
-        description: 'Run clarify stage (opt-in Q&A loop, default: skip)'
+        description: "Run clarify stage (opt-in Q&A loop, default: skip)"
         required: false
         type: boolean
         default: false
       dry_run:
-        description: 'Dry run mode (no actual execution)'
+        description: "Dry run mode (no actual execution)"
         required: false
         type: boolean
         default: false
       feedback:
-        description: 'Feedback for rerun mode'
+        description: "Feedback for rerun mode"
         required: false
         type: string
-        default: ''
+        default: ""
       from_stage:
-        description: 'Stage to restart from (for rerun)'
+        description: "Stage to restart from (for rerun)"
         required: false
         type: string
-        default: ''
+        default: ""
       issue_number:
-        description: 'Issue number for the task'
+        description: "Issue number for the task"
         required: false
         type: string
-        default: ''
+        default: ""
       complexity:
-        description: 'Override complexity score (1-100) for testing'
+        description: "Override complexity score (1-100) for testing"
         required: false
         type: string
-        default: ''
+        default: ""
 
   issue_comment:
     types: [created]
@@ -107,10 +107,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
 
       - name: Install kody-engine
-        run: pnpm add -g @aguyinvest/kody-engine
+        run: pnpm add -g @kody-ade/kody-engine
 
       # For comments: validate safety filters before parsing
       - name: Validate comment trigger safety
@@ -223,10 +223,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
 
       - name: Install kody-engine
-        run: pnpm add -g @aguyinvest/kody-engine
+        run: pnpm add -g @kody-ade/kody-engine
 
       - name: Checkout feature branch if exists
         if: needs.parse.outputs.task_id != '' || needs.parse.outputs.fresh == 'true'

@@ -18,8 +18,8 @@
     "kody:full": "tsx src/engine/entry.ts --mode full",
     "kody:rerun": "tsx src/engine/entry.ts --mode rerun",
     "kody:status": "tsx src/engine/entry.ts --mode status",
-    "build:engine": "pnpm --filter @aguyinvest/kody-engine build",
-    "publish:engine": "pnpm --filter @aguyinvest/kody-engine publish --access public"
+    "build:engine": "pnpm --filter @kody-ade/kody-engine build",
+    "publish:engine": "pnpm --filter @kody-ade/kody-engine publish --access public"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.52",

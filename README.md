@@ -15,10 +15,11 @@ Each stage runs an LLM agent with specialized prompts. The engine orchestrates e
 ## Install in Your Repo
 
 ```bash
-npx @aguyinvest/kody-engine init
+npx @kody-ade/kody-engine init
 ```
 
 This copies:
+
 - `.github/workflows/kody.yml` — GitHub Actions workflow
 - `.opencode/` — Agent prompt definitions
 - `kody.config.json` — Pipeline configuration
@@ -27,13 +28,13 @@ Then add your LLM API keys as GitHub repo secrets and you're ready to go.
 
 ## Pipeline Modes
 
-| Mode    | What it does |
-|---------|-------------|
-| `full`  | Spec + implementation (default) |
-| `spec`  | Analyze and spec the task only |
+| Mode    | What it does                                 |
+| ------- | -------------------------------------------- |
+| `full`  | Spec + implementation (default)              |
+| `spec`  | Analyze and spec the task only               |
 | `impl`  | Skip to implementation (needs existing spec) |
-| `rerun` | Resume from last failure point |
-| `fix`   | Re-review and fix cycle |
+| `rerun` | Resume from last failure point               |
+| `fix`   | Re-review and fix cycle                      |
 
 ## Usage
 
@@ -74,13 +75,13 @@ Edit `kody.config.json` in your target repo:
 
 Add these to your GitHub repo settings:
 
-| Secret | Required | Purpose |
-|--------|----------|---------|
-| `MINIMAX_API_KEY` | Yes (or another LLM key) | LLM provider |
-| `GEMINI_API_KEY` | Optional | Google Gemini |
-| `OPENAI_API_KEY` | Optional | OpenAI |
-| `ANTHROPIC_API_KEY` | Optional | Anthropic Claude |
-| `GH_PAT` | Optional | Cross-repo operations |
+| Secret              | Required                 | Purpose               |
+| ------------------- | ------------------------ | --------------------- |
+| `MINIMAX_API_KEY`   | Yes (or another LLM key) | LLM provider          |
+| `GEMINI_API_KEY`    | Optional                 | Google Gemini         |
+| `OPENAI_API_KEY`    | Optional                 | OpenAI                |
+| `ANTHROPIC_API_KEY` | Optional                 | Anthropic Claude      |
+| `GH_PAT`            | Optional                 | Cross-repo operations |
 
 ## Development
 
